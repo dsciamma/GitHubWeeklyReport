@@ -20,6 +20,5 @@ Resources:
       Events:
         GetEvent:
           Type: Schedule
-            Properties:
-              Schedule: 'cron(0 10 * * MON *)'
-              Input: '{days: 7}'
+          Properties:
+            Schedule: cron(0 10 * * MON *)
