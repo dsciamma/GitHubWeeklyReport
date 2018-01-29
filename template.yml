@@ -12,7 +12,7 @@ Resources:
   GetHelloWorld:
     Type: AWS::Serverless::Function
     Properties:
-      FunctioName: WeeklyReport
+      FunctionName: WeeklyReport
       Handler: main
       Timeout: 180
       Runtime: go1.x
