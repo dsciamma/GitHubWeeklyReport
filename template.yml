@@ -21,4 +21,4 @@ Resources:
         GetEvent:
           Type: Schedule
           Properties:
-            Schedule: cron(0 10 * * MON *)
+            Schedule: cron(0 9 * * MON *)
