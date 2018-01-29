@@ -22,3 +22,7 @@ Resources:
           Type: Schedule
           Properties:
             Schedule: cron(0 9 ? * MON *)
+            Input: {
+              "organization": "CHANGEME"
+              "GitHubToken": "CHANGEME"
+            }
