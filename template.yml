@@ -19,7 +19,6 @@ Resources:
           !Join ['-', [!Ref 'ProjectId', !Ref 'AWS::Region', 'LambdaTrustRole']]
       Events:
         GetEvent:
-          Type: Api
-          Properties:
-            Path: /
-            Method: get
+          Type: Schedule
+            Properties:
+              Schedule: cron(0 10 * * MON *)
