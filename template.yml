@@ -12,7 +12,9 @@ Resources:
   GetHelloWorld:
     Type: AWS::Serverless::Function
     Properties:
+      FunctioName: WeeklyReport
       Handler: main
+      Timeout: 180
       Runtime: go1.x
       Role:
         Fn::ImportValue:
@@ -22,4 +24,4 @@ Resources:
           Type: Schedule
           Properties:
             Schedule: cron(0 9 ? * MON *)
-            Input: { "organization": "CHANGEME", "GitHubToken": "CHANGEME" }
+            Input: '{ "organization": "CHANGEME", "GitHubToken": "CHANGEME" }'
