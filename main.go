@@ -11,12 +11,13 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 )
 
+// JSON structure expected as Input of the Lambda
 type ReportInput struct {
   Organization string
   GitHubToken string
 }
 
-
+// General lambda handler
 func HandleRequest(ctx context.Context, input ReportInput) (string, error) {
 
   ghreport := report.NewGitHubReport(input.Organization, input.GitHubToken, 7)
