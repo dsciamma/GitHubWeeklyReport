@@ -7,6 +7,12 @@ Parameters:
   ProjectId:
     Type: String
     Description: AWS CodeStar projectID used to associate new resources to team members
+  GitHubOrganization:
+    Type: String
+    Description: Name of the GitHub Organization the lambda will work on
+  GitHubToken:
+    Type: String
+    Description: API Token to access GitHub GraphQL API
 
 Resources:
   GetHelloWorld:
@@ -24,4 +30,7 @@ Resources:
           Type: Schedule
           Properties:
             Schedule: cron(0 9 ? * MON *)
-            Input: '{ "organization": "CHANGEME", "GitHubToken": "CHANGEME" }'
+            Input: !Sub
+              - '{ "organization": "${org}", "GitHubToken": "${token}" }'
+              - { org: !Ref GitHubOrganization, token: !Ref GitHubToken }
+
