@@ -60,13 +60,15 @@ func BuildMessageParameters(ghreport *report.GitHubReport) (slack.PostMessagePar
     diff := now.Sub(t)
     buffer.WriteString(
       fmt.Sprintf(
-        "- <https://github.com/%s/%s/pull/%d|%s>: merged %d days ago\n",
+        "- <https://github.com/%s/%s/pull/%d|%s>\n  (%s) merged %d days ago\n",
         ghreport.Organization,
         pullrequest.Repository,
         pullrequest.Number,
         pullrequest.Title,
+        pr.Repository,
         int(diff / (24 * time.Hour))))
   }
+  mergedPRAttachment.Color = "#36a64f"
   mergedPRAttachment.Text = buffer.String()
 
   /*
@@ -91,14 +93,16 @@ func BuildMessageParameters(ghreport *report.GitHubReport) (slack.PostMessagePar
     pr := ghreport.Result.OpenPRsWithActivity[i]
     buffer.WriteString(
       fmt.Sprintf(
-        "- <https://github.com/%s/%s/pull/%d|%s>: %d events, %d participants\n",
+        "- <https://github.com/%s/%s/pull/%d|%s>\n  (%s) %d events, %d participants\n",
         ghreport.Organization,
         pr.Repository,
         pr.Number,
         pr.Title,
+        pr.Repository,
         pr.Timeline.TotalCount,
         pr.Participants.TotalCount))
   }
+  activePRAttachment.Color = "#356ecc"
   activePRAttachment.Text = buffer.String()
 
   /*
@@ -125,13 +129,15 @@ func BuildMessageParameters(ghreport *report.GitHubReport) (slack.PostMessagePar
     diff := now.Sub(t)
     buffer.WriteString(
       fmt.Sprintf(
-        "- <https://github.com/%s/%s/pull/%d|%s>: open %d days ago\n",
+        "- <https://github.com/%s/%s/pull/%d|%s>\n  (%s) open %d days ago\n",
         ghreport.Organization,
         pr.Repository,
         pr.Number,
         pr.Title,
+        pr.Repository,
         int(diff / (24 * time.Hour))))
   }
+  inactivePRAttachment.Color = "#e89237"
   inactivePRAttachment.Text = buffer.String()
 
   params.Attachments = []slack.Attachment{mergedPRAttachment, activePRAttachment, inactivePRAttachment}
