@@ -2,6 +2,7 @@ package main
 
 import (
   "fmt"
+  "bytes"
   "context"
 	//"io/ioutil"
   "sort"
@@ -11,6 +12,9 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
   "github.com/nlopes/slack"
 )
+
+// NB_HIGHLIGHTS defines the number of items displayed is the summary
+const NB_HIGHLIGHTS = 5
 
 // ReportInput defines the JSON structure expected as Input of the Lambda
 type ReportInput struct {
@@ -38,7 +42,7 @@ type ReportInput struct {
 //        }
 //    ]
 //}
-func BuildMessageParameters(ghreport report.GitHubReport) (slack.PostMessageParameters, error) {
+func BuildMessageParameters(ghreport *report.GitHubReport) (slack.PostMessageParameters, error) {
 
   now := time.Now()
   params := slack.PostMessageParameters{}
@@ -57,7 +61,7 @@ func BuildMessageParameters(ghreport report.GitHubReport) (slack.PostMessagePara
     buffer.WriteString(
       fmt.Sprintf(
         "- <https://github.com/%s/%s/pull/%d|%s>: merged %d days ago\n",
-        ghreport.Organization
+        ghreport.Organization,
         pullrequest.Repository,
         pullrequest.Number,
         pullrequest.Title,
@@ -88,7 +92,7 @@ func BuildMessageParameters(ghreport report.GitHubReport) (slack.PostMessagePara
     buffer.WriteString(
       fmt.Sprintf(
         "- <https://github.com/%s/%s/pull/%d|%s>: %d events, %d participants\n",
-        ghreport.Organization
+        ghreport.Organization,
         pr.Repository,
         pr.Number,
         pr.Title,
@@ -101,7 +105,7 @@ func BuildMessageParameters(ghreport report.GitHubReport) (slack.PostMessagePara
    * Create Inactive Open PR section
    */
   buffer.Reset()
-  top := NB_HIGHLIGHTS
+  top = NB_HIGHLIGHTS
   inactivePRAttachment := slack.Attachment{}
   if len(ghreport.Result.OpenPRsWithoutActivity) < top {
     top = len(ghreport.Result.OpenPRsWithoutActivity)
@@ -122,10 +126,10 @@ func BuildMessageParameters(ghreport report.GitHubReport) (slack.PostMessagePara
     buffer.WriteString(
       fmt.Sprintf(
         "- <https://github.com/%s/%s/pull/%d|%s>: open %d days ago\n",
-        ghreport.Organization
-        pullrequest.Repository,
-        pullrequest.Number,
-        pullrequest.Title,
+        ghreport.Organization,
+        pr.Repository,
+        pr.Number,
+        pr.Title,
         int(diff / (24 * time.Hour))))
   }
   inactivePRAttachment.Text = buffer.String()
@@ -137,8 +141,6 @@ func BuildMessageParameters(ghreport report.GitHubReport) (slack.PostMessagePara
 
 // HandleRequest is the general lambda handler
 func HandleRequest(ctx context.Context, input ReportInput) (string, error) {
-
-  const NB_HIGHLIGHTS = 5
 
   ghreport := report.NewGitHubReport(input.GitHubOrganization, input.GitHubToken, 7)
   ghreport.Log = func(s string) { fmt.Printf(s) }
@@ -154,7 +156,7 @@ func HandleRequest(ctx context.Context, input ReportInput) (string, error) {
       return "Error when building message", errMessage
     }
 
-    channelID, timestamp, errPost := api.PostMessage(input.SlackChannel, "Here is your GitHub weekly report", params)
+    _, _, errPost := api.PostMessage(input.SlackChannel, "Here is your GitHub weekly report", params)
     if errPost != nil {
       return "Error when posting message", errPost
     }
