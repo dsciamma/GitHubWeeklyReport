@@ -13,6 +13,12 @@ Parameters:
   GitHubToken:
     Type: String
     Description: API Token to access GitHub GraphQL API
+  SlackToken:
+    Type: String
+    Description: API Token to access Slack API for a workspace
+  SlackChannel:
+    Type: String
+    Description: Slack channel to post the report on
 
 Resources:
   GetHelloWorld:
@@ -31,6 +37,6 @@ Resources:
           Properties:
             Schedule: cron(0 9 ? * MON *)
             Input: !Sub
-              - '{ "organization": "${org}", "GitHubToken": "${token}" }'
-              - { org: !Ref GitHubOrganization, token: !Ref GitHubToken }
+              - '{ "gitHubOrganization": "${org}", "gitHubToken": "${ghToken}", "slackToken": "${slackToken}", "slackChannel": "${slackChannel}" }'
+              - { org: !Ref GitHubOrganization, ghToken: !Ref GitHubToken, slackToken: !Ref SlackToken, slackChannel: !Ref SlackChannel }
 
