@@ -13,8 +13,8 @@ import (
   "github.com/nlopes/slack"
 )
 
-// Nb_Highlights defines the number of items displayed is the summary
-const Nb_Highlights = 5
+// NbHighlights defines the number of items displayed is the summary
+const NbHighlights = 5
 
 // ReportInput defines the JSON structure expected as Input of the Lambda
 type ReportInput struct {
@@ -73,7 +73,7 @@ func BuildMessageParameters(ghreport *report.GitHubReport) (slack.PostMessagePar
    * Create Active Open PR section
    */
   buffer.Reset()
-  top := Nb_Highlights
+  top := NbHighlights
   activePRAttachment := slack.Attachment{}
   if len(ghreport.Result.OpenPRsWithActivity) < top {
     top = len(ghreport.Result.OpenPRsWithActivity)
@@ -105,7 +105,7 @@ func BuildMessageParameters(ghreport *report.GitHubReport) (slack.PostMessagePar
    * Create Inactive Open PR section
    */
   buffer.Reset()
-  top = Nb_Highlights
+  top = NbHighlights
   inactivePRAttachment := slack.Attachment{}
   if len(ghreport.Result.OpenPRsWithoutActivity) < top {
     top = len(ghreport.Result.OpenPRsWithoutActivity)
