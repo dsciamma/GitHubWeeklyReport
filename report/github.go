@@ -34,6 +34,7 @@ type userStruct struct {
 }
 
 type PRStruct struct {
+  Number int
   Title string
   Repository string
   CreatedAt string
@@ -96,6 +97,7 @@ type reportResponseStruct struct {
         Target struct {
           History struct {
             Nodes []struct {
+              Oid string
               CommittedDate string
               Author userStruct
               Message string
@@ -313,6 +315,7 @@ query ($organization: String!, $repo: String!, $date: GitTimestamp!, $date2: Dat
     name
     mergedPR: pullRequests(last: $size, states: [MERGED], orderBy: {field: UPDATED_AT, direction: ASC}) {
       nodes {
+        number
         title
         createdAt
         participants(last: $size) {
@@ -327,6 +330,7 @@ query ($organization: String!, $repo: String!, $date: GitTimestamp!, $date2: Dat
     }
     openPR: pullRequests(last: $size, states: [OPEN]) {
       nodes {
+        number
         title
         createdAt
         mergedAt
@@ -356,6 +360,7 @@ query ($organization: String!, $repo: String!, $date: GitTimestamp!, $date2: Dat
               history(first: $size, since: $date) {
                 nodes {
                   ... on Commit {
+                    oid
                     committedDate
                     author {
                       name
