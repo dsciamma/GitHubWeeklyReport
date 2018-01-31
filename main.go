@@ -1,16 +1,16 @@
 package main
 
 import (
-  "fmt"
-  "bytes"
-  "context"
+	"bytes"
+	"context"
+	"fmt"
 	//"io/ioutil"
-  "sort"
-  "time"
+	"sort"
+	"time"
 
-  "github.com/dsciamma/GitHubWeeklyReport/report"
 	"github.com/aws/aws-lambda-go/lambda"
-  "github.com/nlopes/slack"
+	"github.com/nlopes/slack"
+  "github.com/dsciamma/ghreport"
 )
 
 // NbHighlights defines the number of items displayed is the summary
@@ -18,10 +18,10 @@ const NbHighlights = 5
 
 // ReportInput defines the JSON structure expected as Input of the Lambda
 type ReportInput struct {
-  GitHubOrganization string
-  GitHubToken string
-  SlackToken string
-  SlackChannel string
+	GitHubOrganization string
+	GitHubToken        string
+	SlackToken         string
+	SlackChannel       string
 }
 
 // BuildMessageParameters generates the message parameters from a GitHubReport.
@@ -42,135 +42,136 @@ type ReportInput struct {
 //        }
 //    ]
 //}
-func BuildMessageParameters(ghreport *report.GitHubReport) (slack.PostMessageParameters, error) {
+func BuildMessageParameters(report *ghreport.ActivityReport) (slack.PostMessageParameters, error) {
 
-  now := time.Now()
-  params := slack.PostMessageParameters{}
+	now := time.Now()
+	params := slack.PostMessageParameters{}
 
-  /*
-   * Create Merged PR section
-   */
-  mergedPRAttachment := slack.Attachment{}
-  mergedPRAttachment.Title = fmt.Sprintf(
-    "%d Merged PRs!",
-    len(ghreport.Result.MergedPRs))
-  var buffer bytes.Buffer
-  for _, pullrequest := range ghreport.Result.MergedPRs {
-    t, _ := time.Parse(report.ISO_FORM, pullrequest.MergedAt)
-    diff := now.Sub(t)
-    buffer.WriteString(
-      fmt.Sprintf(
-        "- <https://github.com/%s/%s/pull/%d|%s>\n  (%s) merged %d days ago\n",
-        ghreport.Organization,
-        pullrequest.Repository,
-        pullrequest.Number,
-        pullrequest.Title,
-        pr.Repository,
-        int(diff / (24 * time.Hour))))
-  }
-  mergedPRAttachment.Color = "#36a64f"
-  mergedPRAttachment.Text = buffer.String()
+	/*
+	 * Create Merged PR section
+	 */
+	mergedPRAttachment := slack.Attachment{}
 
-  /*
-   * Create Active Open PR section
-   */
-  buffer.Reset()
-  top := NbHighlights
-  activePRAttachment := slack.Attachment{}
-  if len(ghreport.Result.OpenPRsWithActivity) < top {
-    top = len(ghreport.Result.OpenPRsWithActivity)
-    activePRAttachment.Title = fmt.Sprintf(
-      "%d open PRs with an activity:",
-      len(ghreport.Result.OpenPRsWithActivity))
-  } else {
-    activePRAttachment.Title = fmt.Sprintf(
-      "%d open PRs with an activity. Here is the %d most active ones:",
-      len(ghreport.Result.OpenPRsWithActivity),
-      top)
-  }
-  sort.Sort(report.ByActivity(ghreport.Result.OpenPRsWithActivity))
-  for i := 0; i < top; i++ {
-    pr := ghreport.Result.OpenPRsWithActivity[i]
-    buffer.WriteString(
-      fmt.Sprintf(
-        "- <https://github.com/%s/%s/pull/%d|%s>\n  (%s) %d events, %d participants\n",
-        ghreport.Organization,
-        pr.Repository,
-        pr.Number,
-        pr.Title,
-        pr.Repository,
-        pr.Timeline.TotalCount,
-        pr.Participants.TotalCount))
-  }
-  activePRAttachment.Color = "#356ecc"
-  activePRAttachment.Text = buffer.String()
+	mergedPRAttachment.Title = fmt.Sprintf(
+		"%d Merged PRs!",
+		len(report.Result.MergedPRs))
+	var buffer bytes.Buffer
+	for _, pullrequest := range report.Result.MergedPRs {
+		t, _ := time.Parse(ghreport.ISO_FORM, pullrequest.MergedAt)
+		diff := now.Sub(t)
+		buffer.WriteString(
+			fmt.Sprintf(
+				"- <https://github.com/%s/%s/pull/%d|%s>\n\t(%s) merged %d days ago\n",
+				report.Organization,
+				pullrequest.Repository,
+				pullrequest.Number,
+				pullrequest.Title,
+				pullrequest.Repository,
+				int(diff/(24*time.Hour))))
+	}
+	mergedPRAttachment.Color = "#36a64f"
+	mergedPRAttachment.Text = buffer.String()
 
-  /*
-   * Create Inactive Open PR section
-   */
-  buffer.Reset()
-  top = NbHighlights
-  inactivePRAttachment := slack.Attachment{}
-  if len(ghreport.Result.OpenPRsWithoutActivity) < top {
-    top = len(ghreport.Result.OpenPRsWithoutActivity)
-    inactivePRAttachment.Title = fmt.Sprintf(
-      "%d open PRs without any activity last week:",
-      len(ghreport.Result.OpenPRsWithoutActivity))
-  } else {
-    inactivePRAttachment.Title = fmt.Sprintf(
-      "%d open PRs without any activity last week. Here is the %d oldest:",
-      len(ghreport.Result.OpenPRsWithoutActivity),
-      top)
-  }
-  sort.Sort(report.ByAge(ghreport.Result.OpenPRsWithoutActivity))
-  for i := 0; i < top; i++ {
-    pr := ghreport.Result.OpenPRsWithoutActivity[i]
-    t, _ := time.Parse(report.ISO_FORM, pr.CreatedAt)
-    diff := now.Sub(t)
-    buffer.WriteString(
-      fmt.Sprintf(
-        "- <https://github.com/%s/%s/pull/%d|%s>\n  (%s) open %d days ago\n",
-        ghreport.Organization,
-        pr.Repository,
-        pr.Number,
-        pr.Title,
-        pr.Repository,
-        int(diff / (24 * time.Hour))))
-  }
-  inactivePRAttachment.Color = "#e89237"
-  inactivePRAttachment.Text = buffer.String()
 
-  params.Attachments = []slack.Attachment{mergedPRAttachment, activePRAttachment, inactivePRAttachment}
+	/*
+	 * Create Active Open PR section
+	 */
+	buffer.Reset()
+	top := NbHighlights
+	activePRAttachment := slack.Attachment{}
+	if len(report.Result.OpenPRsWithActivity) < top {
+		top = len(report.Result.OpenPRsWithActivity)
+		activePRAttachment.Title = fmt.Sprintf(
+			"%d open PRs with an activity:",
+			len(report.Result.OpenPRsWithActivity))
+	} else {
+		activePRAttachment.Title = fmt.Sprintf(
+			"%d open PRs with an activity. Here is the %d most active ones:",
+			len(report.Result.OpenPRsWithActivity),
+			top)
+	}
+	sort.Sort(ghreport.ByActivity(report.Result.OpenPRsWithActivity))
+	for i := 0; i < top; i++ {
+		pr := report.Result.OpenPRsWithActivity[i]
+		buffer.WriteString(
+			fmt.Sprintf(
+				"- <https://github.com/%s/%s/pull/%d|%s>\n\t(%s) %d events, %d participants\n",
+				report.Organization,
+				pr.Repository,
+				pr.Number,
+				pr.Title,
+				pr.Repository,
+				pr.Timeline.TotalCount,
+				pr.Participants.TotalCount))
+	}
+	activePRAttachment.Color = "#356ecc"
+	activePRAttachment.Text = buffer.String()
 
-  return params, nil
+	/*
+	 * Create Inactive Open PR section
+	 */
+	buffer.Reset()
+	top = NbHighlights
+	inactivePRAttachment := slack.Attachment{}
+	if len(report.Result.OpenPRsWithoutActivity) < top {
+		top = len(report.Result.OpenPRsWithoutActivity)
+		inactivePRAttachment.Title = fmt.Sprintf(
+			"%d open PRs without any activity last week:",
+			len(report.Result.OpenPRsWithoutActivity))
+	} else {
+		inactivePRAttachment.Title = fmt.Sprintf(
+			"%d open PRs without any activity last week. Here is the %d oldest:",
+			len(report.Result.OpenPRsWithoutActivity),
+			top)
+	}
+	sort.Sort(ghreport.ByAge(report.Result.OpenPRsWithoutActivity))
+	for i := 0; i < top; i++ {
+		pr := report.Result.OpenPRsWithoutActivity[i]
+		t, _ := time.Parse(ghreport.ISO_FORM, pr.CreatedAt)
+		diff := now.Sub(t)
+		buffer.WriteString(
+			fmt.Sprintf(
+				"- <https://github.com/%s/%s/pull/%d|%s>\n\t(%s) open %d days ago\n",
+				report.Organization,
+				pr.Repository,
+				pr.Number,
+				pr.Title,
+				pr.Repository,
+				int(diff/(24*time.Hour))))
+	}
+	inactivePRAttachment.Color = "#e89237"
+	inactivePRAttachment.Text = buffer.String()
+
+	params.Attachments = []slack.Attachment{mergedPRAttachment, activePRAttachment, inactivePRAttachment}
+
+	return params, nil
 }
 
 // HandleRequest is the general lambda handler
 func HandleRequest(ctx context.Context, input ReportInput) (string, error) {
 
-  ghreport := report.NewGitHubReport(input.GitHubOrganization, input.GitHubToken, 7)
-  ghreport.Log = func(s string) { fmt.Printf(s) }
-  err := ghreport.Run()
+	report := ghreport.NewActivityReport(input.GitHubOrganization, input.GitHubToken, 7)
+	report.Log = func(s string) { fmt.Printf(s) }
+	err := report.Run()
 
-  if err != nil {
-    fmt.Printf("An error occured %v\n", err)
-  } else {
+	if err != nil {
+		fmt.Printf("An error occured %v\n", err)
+	} else {
 
-    api := slack.New(input.SlackToken)
-    params, errMessage := BuildMessageParameters(ghreport)
-    if errMessage != nil {
-      return "Error when building message", errMessage
-    }
+		api := slack.New(input.SlackToken)
+		params, errMessage := BuildMessageParameters(report)
+		if errMessage != nil {
+			return "Error when building message", errMessage
+		}
 
-    _, _, errPost := api.PostMessage(input.SlackChannel, "Here is your GitHub weekly report", params)
-    if errPost != nil {
-      return "Error when posting message", errPost
-    }
-  }
-  return fmt.Sprintf("Report generated for %s!", input.GitHubOrganization ), nil
+		_, _, errPost := api.PostMessage(input.SlackChannel, "Here is your GitHub weekly report", params)
+		if errPost != nil {
+			return "Error when posting message", errPost
+		}
+	}
+	return fmt.Sprintf("Report generated for %s!", input.GitHubOrganization), nil
 }
 
-
 func main() {
-  lambda.Start(HandleRequest)
+	lambda.Start(HandleRequest)
 }
