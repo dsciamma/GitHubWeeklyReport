@@ -14,7 +14,7 @@ import (
 )
 
 // NbHighlights defines the number of items displayed is the summary
-const NbHighlights = 5
+const NbHighlights = 10
 
 // ReportInput defines the JSON structure expected as Input of the Lambda
 type ReportInput struct {
@@ -51,11 +51,11 @@ func BuildMessageParameters(report *ghreport.ActivityReport) (slack.PostMessageP
 	 * Create Merged PR section
 	 */
 	mergedPRAttachment := slack.Attachment{}
-
 	mergedPRAttachment.Title = fmt.Sprintf(
 		"%d Merged PRs!",
 		len(report.Result.MergedPRs))
 	var buffer bytes.Buffer
+  sort.Sort(ghreport.ByTitle(report.Result.MergedPRs))
 	for _, pullrequest := range report.Result.MergedPRs {
 		t, _ := time.Parse(ghreport.ISO_FORM, pullrequest.MergedAt)
 		diff := now.Sub(t)
@@ -86,7 +86,7 @@ func BuildMessageParameters(report *ghreport.ActivityReport) (slack.PostMessageP
 			len(report.Result.OpenPRsWithActivity))
 	} else {
 		activePRAttachment.Title = fmt.Sprintf(
-			"%d open PRs with an activity. Here is the %d most active ones:",
+			"%d open PRs with an activity. Here are the %d most active ones:",
 			len(report.Result.OpenPRsWithActivity),
 			top)
 	}
@@ -120,7 +120,7 @@ func BuildMessageParameters(report *ghreport.ActivityReport) (slack.PostMessageP
 			len(report.Result.OpenPRsWithoutActivity))
 	} else {
 		inactivePRAttachment.Title = fmt.Sprintf(
-			"%d open PRs without any activity last week. Here is the %d oldest:",
+			"%d open PRs without any activity last week. Here are the %d oldest:",
 			len(report.Result.OpenPRsWithoutActivity),
 			top)
 	}
